@@ -534,6 +534,11 @@ const CourseDetail = () => {
       setCourse(updated.data);
       setShowEditModal(false);
       alert('Course updated successfully!');
+      // Re-fetch lessons from backend after editing course
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const lessonsRes = await axios.get(`${API_URL}/api/lesson/${course._id}`, { headers });
+      setLessons(lessonsRes.data);
     } catch (err) {
       alert('Failed to update course.');
     } finally {
