@@ -56,6 +56,8 @@ const CourseDetail = () => {
   // Quiz state
   const [quizAttempt, setQuizAttempt] = useState(null);
   const [quizEligibility, setQuizEligibility] = useState(null);
+  // Add backendProgress state
+  const [backendProgress, setBackendProgress] = useState(0);
 
   // Calculate total lessons and duration
   const totalLessons = lessons.length;
@@ -108,32 +110,37 @@ const CourseDetail = () => {
 
   const instructor = getInstructorData();
 
+  // Helper to fetch and update completed lessons and progress from backend
+  const fetchAndUpdateProgress = async () => {
+    if (!user || !user._id || !course?._id) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/enroll/progress/${user._id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const courseProgress = Array.isArray(res.data)
+        ? res.data.find(p => p.course && p.course._id === course._id)
+        : null;
+      if (courseProgress && Array.isArray(courseProgress.completedlessons)) {
+        const completedMap = {};
+        courseProgress.completedlessons.forEach(l => {
+          if (typeof l === 'string') completedMap[l] = true;
+          else if (l && l._id) completedMap[l._id] = true;
+        });
+        setCompletedLessonsByUser(completedMap);
+        setBackendProgress(courseProgress.progress || 0);
+      } else {
+        setCompletedLessonsByUser({});
+        setBackendProgress(0);
+      }
+    } catch (err) {
+      setCompletedLessonsByUser({});
+      setBackendProgress(0);
+    }
+  };
+
   // Fetch completed lessons for the user
   useEffect(() => {
-    const fetchCompletedLessons = async () => {
-      if (!user || !user._id || !course?._id) return;
-      try {
-        const res = await axios.get(`${API_URL}/api/enroll/progress/${user._id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        const courseProgress = Array.isArray(res.data)
-          ? res.data.find(p => p.course && p.course._id === course._id)
-          : null;
-        if (courseProgress && Array.isArray(courseProgress.completedlessons)) {
-          const completedMap = {};
-          courseProgress.completedlessons.forEach(l => {
-            if (typeof l === 'string') completedMap[l] = true;
-            else if (l && l._id) completedMap[l._id] = true;
-          });
-          setCompletedLessonsByUser(completedMap);
-        } else {
-          setCompletedLessonsByUser({});
-        }
-      } catch (err) {
-        setCompletedLessonsByUser({});
-      }
-    };
-    if (isEnrolled) fetchCompletedLessons();
+    if (isEnrolled) fetchAndUpdateProgress();
   }, [user, course, isEnrolled, lessons.length, triggerRefresh]);
 
   // Handler for video progress tracking and automatic completion
@@ -160,7 +167,7 @@ const CourseDetail = () => {
     setAutoCompleting(prev => ({ ...prev, [lessonId]: true }));
     try {
       await completeLesson(user._id, course._id, lessonId);
-      setCompletedLessonsByUser(prev => ({ ...prev, [lessonId]: true }));
+      await fetchAndUpdateProgress();
       triggerRefresh();
       
       // Show notification
@@ -189,9 +196,7 @@ const CourseDetail = () => {
     try {
       if (checked) {
         await completeLesson(user._id, course._id, lessonId);
-        setCompletedLessonsByUser(prev => ({ ...prev, [lessonId]: true }));
       } else {
-        // Unmarking: remove from completed lessons (custom endpoint needed)
         await axios.post(`${API_URL}/api/enroll/uncomplete-lesson`, {
           student: user._id,
           course: course._id,
@@ -199,21 +204,8 @@ const CourseDetail = () => {
         }, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        setCompletedLessonsByUser(prev => {
-          const copy = { ...prev };
-          delete copy[lessonId];
-          return copy;
-        });
-        
-        // Clear video progress when manually unchecked
-        const progressKey = `videoProgress_${course._id}_${lessonId}`;
-        localStorage.removeItem(progressKey);
-        setVideoProgress(prev => {
-          const copy = { ...prev };
-          delete copy[lessonId];
-          return copy;
-        });
       }
+      await fetchAndUpdateProgress();
       triggerRefresh();
     } catch (err) {
       alert('Failed to update lesson completion.');
@@ -224,7 +216,7 @@ const CourseDetail = () => {
 
   // Calculate completed lessons and progress
   const completedLessons = Object.keys(completedLessonsByUser).length;
-  const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const progress = backendProgress;
 
   useEffect(() => {
     const fetchCourse = async () => {
