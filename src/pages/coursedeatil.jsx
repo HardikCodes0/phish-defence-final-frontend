@@ -577,17 +577,18 @@ const CourseDetail = () => {
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
       const res = await axios.post(`${API_URL}/api/lesson/addlesson`, {
         course: course?._id,
         ...newLesson,
         order: editLessons.length + 1,
       }, { headers });
       setEditLessons(prev => [...prev, res.data]);
-      setLessons(prev => [...prev, res.data]);
       setNewLesson({ title: '', content: '', videourl: '', pdfurl: '', order: editLessons.length + 2 });
       setAddingLesson(false);
       alert('Lesson added!');
+      // Re-fetch lessons from backend to ensure UI is up to date
+      const lessonsRes = await axios.get(`${API_URL}/api/lesson/${course._id}`, { headers });
+      setLessons(lessonsRes.data);
     } catch (err) {
       console.error('❌ Error adding lesson:', err.response?.data || err.message);
       alert('Failed to add lesson.');
