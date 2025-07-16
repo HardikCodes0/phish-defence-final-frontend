@@ -58,12 +58,16 @@ const CourseDetail = () => {
   const [quizEligibility, setQuizEligibility] = useState(null);
   // Add backendProgress state
   const [backendProgress, setBackendProgress] = useState(0);
+  // Add state to store real video durations
+  const [videoDurations, setVideoDurations] = useState({});
 
   // Calculate total lessons and duration
   const totalLessons = lessons.length;
-  const totalDuration = lessons.length > 0
-    ? lessons.reduce((acc, l) => acc + (parseInt(l.duration) || 0), 0)
-    : (course?.duration || 0);
+  // Calculate total video duration (real, from loaded video metadata)
+  const videoLessonIds = lessons.filter(l => l.videourl).map(l => l._id);
+  const totalVideoDuration = videoLessonIds.reduce((acc, id) => acc + (videoDurations[id] || 0), 0);
+  const totalVideoDurationMin = Math.round(totalVideoDuration / 60);
+  const totalDuration = totalVideoDurationMin > 0 ? `${totalVideoDurationMin} min` : '0 min';
 
   // Get instructor data from course - only return data if instructor has meaningful information
   const getInstructorData = () => {
@@ -725,7 +729,7 @@ const CourseDetail = () => {
               
               <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} flex items-center space-x-2`}>
                 <Clock size={16} className="text-blue-500" />
-                <span className="text-sm font-medium">{course.duration ? `${course.duration} min` : 'N/A'}</span>
+                <span className="text-sm font-medium">{totalVideoDurationMin > 0 ? `${totalVideoDurationMin} min` : '0 min'}</span>
               </div>
               
               <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} flex items-center space-x-2`}>
@@ -817,7 +821,7 @@ const CourseDetail = () => {
                   <span className="ml-3">Course Content</span>
                 </h2>
                 <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-2`}>
-                  {totalLessons} lessons • {totalDuration} minutes total
+                  {totalLessons} lessons • {totalVideoDurationMin > 0 ? `${totalVideoDurationMin} min` : '0 min'} total
                   {!course.isFree && lessons.some(l => l.free) && (
                     <span className="ml-2 text-green-500">
                       • {lessons.filter(l => l.free).length} free lessons available
@@ -853,7 +857,27 @@ const CourseDetail = () => {
                               <div>
                                 <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lesson.title}</h3>
                                 <div className={`flex items-center space-x-3 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                  <span>{lesson.duration || '5 min'}</span>
+                                  {/* Real video duration display */}
+                                  {lesson.videourl ? (
+                                    <>
+                                      <span>
+                                        {videoDurations[lesson._id] !== undefined
+                                          ? `${Math.floor(videoDurations[lesson._id] / 60)}:${String(Math.round(videoDurations[lesson._id] % 60)).padStart(2, '0')} min`
+                                          : 'Loading...'}
+                                      </span>
+                                      {/* Hidden video element to extract duration */}
+                                      <video
+                                        src={lesson.videourl}
+                                        style={{ display: 'none' }}
+                                        onLoadedMetadata={e => {
+                                          const duration = e.target.duration;
+                                          setVideoDurations(prev => ({ ...prev, [lesson._id]: duration }));
+                                        }}
+                                      />
+                                    </>
+                                  ) : (
+                                    <span>N/A</span>
+                                  )}
                                   {lesson.free && !course.isFree && (
                                     <span className="flex items-center text-green-600">
                                       <Unlock size={12} className="mr-1" />
@@ -880,7 +904,6 @@ const CourseDetail = () => {
                                   disabled={markingLesson[lesson._id] || autoCompleting[lesson._id]}
                                 />
                               )}
-                              
                               {/* Resources Dropdown */}
                               <span
                                 role="button"
@@ -1039,7 +1062,7 @@ const CourseDetail = () => {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Duration</span>
-                    <span className={`${isDarkMode ? 'text-white' : 'text-slate-900'} font-medium`}>{course.duration ? `${course.duration} min` : 'N/A'}</span>
+                    <span className={`${isDarkMode ? 'text-white' : 'text-slate-900'} font-medium`}>{totalVideoDurationMin > 0 ? `${totalVideoDurationMin} min` : '0 min'}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Certificate</span>
