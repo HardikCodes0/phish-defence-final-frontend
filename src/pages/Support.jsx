@@ -139,16 +139,6 @@ const Support = () => {
                 >
                   FAQ
                 </button>
-                <button
-                  onClick={() => setActiveTab('resources')}
-                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                    activeTab === 'resources'
-                      ? 'bg-teal-500 text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50'
-                  }`}
-                >
-                  Resources
-                </button>
               </div>
             </div>
           </div>
@@ -262,54 +252,6 @@ const Support = () => {
                     )}
                   </div>
                 ))}
-              </div>
-            )}
-
-            {activeTab === 'resources' && (
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 rounded-2xl p-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-lg mb-4">
-                    <Book className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Documentation</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">Comprehensive guides and tutorials to help you get the most out of our platform.</p>
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
-                    View Docs
-                  </button>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 rounded-2xl p-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500/20 rounded-lg mb-4">
-                    <Users className="w-6 h-6 text-purple-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Community Forum</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">Connect with other users, share best practices, and get answers from the community.</p>
-                  <button className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
-                    Join Forum
-                  </button>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 rounded-2xl p-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-500/20 rounded-lg mb-4">
-                    <Shield className="w-6 h-6 text-green-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Security Best Practices</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">Learn about the latest cybersecurity threats and how to protect your organization.</p>
-                  <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
-                    Learn More
-                  </button>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 rounded-2xl p-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-500/20 rounded-lg mb-4">
-                    <MessageCircle className="w-6 h-6 text-orange-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Video Tutorials</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">Step-by-step video guides to help you master every feature of our platform.</p>
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
-                    Watch Videos
-                  </button>
-                </div>
               </div>
             )}
           </div>
