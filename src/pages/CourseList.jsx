@@ -266,23 +266,10 @@ const Courses = () => {
                       
                       <button
                         onClick={() => navigate(`/courses/${course._id}`)}
-                        className={`px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-200 hover:shadow-lg ${
-                          isEnrolled
-                            ? 'bg-emerald-500 hover:bg-emerald-600 text-white hover:shadow-emerald-500/25'
-                            : 'bg-teal-500 hover:bg-teal-600 text-white hover:shadow-teal-500/25'
-                        }`}
+                        className="px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all duration-200 hover:shadow-lg bg-emerald-500 hover:bg-emerald-600 text-white hover:shadow-emerald-500/25"
                       >
-                        {isEnrolled ? (
-                          <>
-                            <Play className="h-4 w-4" />
-                            Go to Course
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4" />
-                            {course.isFree ? 'Start Free' : 'Enroll'}
-                          </>
-                        )}
+                        <Play className="h-4 w-4" />
+                        Go to Course
                       </button>
                     </div>
                   </div>
