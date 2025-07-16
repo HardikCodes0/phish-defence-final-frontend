@@ -381,9 +381,25 @@ const CourseDetail = () => {
   // When opening edit modal, also load lessons for editing
   useEffect(() => {
     if (showEditModal) {
+      console.log('🔄 Syncing editLessons with lessons:', lessons);
       setEditLessons(lessons);
     }
   }, [showEditModal, lessons]);
+
+  // Function to close edit modal and refresh lessons
+  const handleCloseEditModal = async () => {
+    setShowEditModal(false);
+    // Refresh lessons from backend to ensure we have the latest data
+    try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const lessonsRes = await axios.get(`${API_URL}/api/lesson/${course._id}`, { headers });
+      setLessons(lessonsRes.data);
+      setEditLessons(lessonsRes.data);
+    } catch (err) {
+      console.error('Failed to refresh lessons:', err);
+    }
+  };
 
   // Fetch quiz attempt and eligibility
   useEffect(() => {
@@ -539,6 +555,7 @@ const CourseDetail = () => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const lessonsRes = await axios.get(`${API_URL}/api/lesson/${course._id}`, { headers });
       setLessons(lessonsRes.data);
+      setEditLessons(lessonsRes.data);
     } catch (err) {
       alert('Failed to update course.');
     } finally {
@@ -580,6 +597,7 @@ const CourseDetail = () => {
   };
   const handleAddLesson = async () => {
     try {
+      console.log('🚀 Adding lesson:', newLesson);
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.post(`${API_URL}/api/lesson/addlesson`, {
@@ -587,13 +605,31 @@ const CourseDetail = () => {
         ...newLesson,
         order: editLessons.length + 1,
       }, { headers });
-      setEditLessons(prev => [...prev, res.data]);
+      
+      console.log('✅ Lesson added to backend:', res.data);
+      
+      // Update both editLessons and lessons states immediately
+      const newLessonData = res.data;
+      setEditLessons(prev => {
+        console.log('📝 Updating editLessons:', [...prev, newLessonData]);
+        return [...prev, newLessonData];
+      });
+      setLessons(prev => {
+        console.log('📝 Updating lessons:', [...prev, newLessonData]);
+        return [...prev, newLessonData];
+      });
+      
+      // Reset form
       setNewLesson({ title: '', content: '', videourl: '', pdfurl: '', order: editLessons.length + 2 });
       setAddingLesson(false);
       alert('Lesson added!');
-      // Re-fetch lessons from backend to ensure UI is up to date
+      
+      // Re-fetch lessons from backend to ensure everything is in sync
+      console.log('🔄 Re-fetching lessons from backend...');
       const lessonsRes = await axios.get(`${API_URL}/api/lesson/${course._id}`, { headers });
+      console.log('📚 Fetched lessons from backend:', lessonsRes.data);
       setLessons(lessonsRes.data);
+      setEditLessons(lessonsRes.data);
     } catch (err) {
       console.error('❌ Error adding lesson:', err.response?.data || err.message);
       alert('Failed to add lesson.');
@@ -1499,7 +1535,7 @@ const CourseDetail = () => {
               <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit Course</h2>
               <button
                 className={`transition-colors ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}
-                onClick={() => setShowEditModal(false)}
+                onClick={handleCloseEditModal}
               >
                 <span className="text-2xl">&times;</span>
               </button>
@@ -1619,7 +1655,7 @@ const CourseDetail = () => {
               <div className="flex justify-end space-x-4 pt-4">
                 <button 
                   type="button" 
-                  onClick={() => setShowEditModal(false)} 
+                  onClick={handleCloseEditModal} 
                   className={`px-6 py-3 ${isDarkMode ? 'bg-slate-600 hover:bg-slate-700 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-900'} rounded-lg font-medium transition-colors`}
                 >
                   Cancel
