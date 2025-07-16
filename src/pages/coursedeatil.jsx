@@ -241,10 +241,12 @@ const CourseDetail = () => {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         
-        console.log('🔍 Fetching lessons for course:', id, 'with auth:', !!token);
+        console.log('🔍 Fetching lessons for course:', id, 'with auth:', !!token, 'user:', user?.username, 'isAdmin:', user?.isAdmin);
         const res = await axios.get(`${API_URL}/api/lesson/${id}`, { headers });
         console.log('📚 Fetched lessons:', res.data);
+        console.log('📊 Total lessons received:', res.data.length);
         setLessons(res.data);
+        console.log('✅ Lessons state updated with', res.data.length, 'lessons');
         
         // Load saved video progress from localStorage
         if (res.data.length > 0 && course?._id) {
@@ -262,11 +264,13 @@ const CourseDetail = () => {
         }
       } catch (err) {
         console.error('❌ Error fetching lessons:', err.response?.data || err.message);
+        console.error('❌ Error status:', err.response?.status);
+        console.error('❌ Error headers:', err.response?.headers);
         setLessons([]);
       }
     };
     if (id) fetchLessons();
-  }, [id, course?._id]);
+  }, [id, course?._id, user?.isAdmin]);
 
   useEffect(() => {
     const checkEnrollment = async () => {
@@ -385,6 +389,14 @@ const CourseDetail = () => {
       setEditLessons(lessons);
     }
   }, [showEditModal, lessons]);
+
+  // Debug: Log when lessons state changes
+  useEffect(() => {
+    console.log('🔄 Lessons state changed:', lessons.length, 'lessons');
+    if (user?.isAdmin) {
+      console.log('👑 Admin user - all lessons:', lessons.map(l => ({ id: l._id, title: l.title })));
+    }
+  }, [lessons, user?.isAdmin]);
 
   // Function to close edit modal and refresh lessons
   const handleCloseEditModal = async () => {
@@ -758,6 +770,23 @@ const CourseDetail = () => {
     );
   }
 
+  // Debug: Log lessons array before render
+  console.log('🎬 Rendering with lessons:', lessons.length, 'lessons:', lessons.map(l => ({ id: l._id, title: l.title })));
+
+  // Manual refresh function for debugging
+  const manualRefreshLessons = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      console.log('🔄 Manual refresh - fetching lessons for course:', id);
+      const res = await axios.get(`${API_URL}/api/lesson/${id}`, { headers });
+      console.log('🔄 Manual refresh - received lessons:', res.data);
+      setLessons(res.data);
+    } catch (err) {
+      console.error('🔄 Manual refresh failed:', err);
+    }
+  };
+
 
 
   const firstVideoLesson = lessons.find(l => l.videourl);
@@ -907,9 +936,50 @@ const CourseDetail = () => {
               
               <div className="p-6">
                 {lessons.length === 0 ? (
-                  <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-center py-8`}>No lessons available for this course.</p>
+                  <div className="text-center py-8">
+                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-4`}>No lessons available for this course.</p>
+                    {/* Debug info for admin users */}
+                    {user?.isAdmin && (
+                      <div className={`${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3`}>
+                        <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                          🔧 Admin Debug: No lessons found in database for course {id}
+                        </p>
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const token = localStorage.getItem('token');
+                              const headers = { Authorization: `Bearer ${token}` };
+                              const res = await axios.get(`${API_URL}/api/lesson/debug/${id}`, { headers });
+                              console.log('🔍 Debug endpoint result:', res.data);
+                              alert(`Debug: ${res.data.totalLessons} lessons found in database`);
+                            } catch (err) {
+                              console.error('Debug endpoint error:', err);
+                              alert('Debug endpoint error: ' + err.message);
+                            }
+                          }}
+                          className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm"
+                        >
+                          Test Database Connection
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-3 relative">
+                    {/* Debug info for admin users */}
+                    {user?.isAdmin && (
+                      <div className={`${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3 mb-4`}>
+                        <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                          🔧 Admin Debug: Displaying {lessons.length} lessons from database
+                        </p>
+                        <button 
+                          onClick={manualRefreshLessons}
+                          className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm"
+                        >
+                          Refresh Lessons
+                        </button>
+                      </div>
+                    )}
                     {lessons.map((lesson, idx) => (
                       <div key={lesson._id} className={`border rounded-xl ${isDarkMode ? 'border-slate-700/50' : 'border-gray-200'} ${openResourcesDropdown === lesson._id ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-200 hover:shadow-md`}>
                         <div className="relative">
@@ -1544,12 +1614,6 @@ const CourseDetail = () => {
         {/* Admin Controls */}
         {user && user.isAdmin && (
           <div className="mt-12 flex justify-center space-x-4">
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-200"
-            >
-              Edit Course
-            </button>
             <button
               onClick={handleDeleteCourse}
               className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-200"
