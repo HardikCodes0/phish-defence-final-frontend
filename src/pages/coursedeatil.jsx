@@ -966,20 +966,7 @@ const CourseDetail = () => {
                   </div>
                 ) : (
                   <div className="space-y-3 relative">
-                    {/* Debug info for admin users */}
-                    {user?.isAdmin && (
-                      <div className={`${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3 mb-4`}>
-                        <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                          🔧 Admin Debug: Displaying {lessons.length} lessons from database
-                        </p>
-                        <button 
-                          onClick={manualRefreshLessons}
-                          className="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white text-sm"
-                        >
-                          Refresh Lessons
-                        </button>
-                      </div>
-                    )}
+
                     {lessons.map((lesson, idx) => (
                       <div key={lesson._id} className={`border rounded-xl ${isDarkMode ? 'border-slate-700/50' : 'border-gray-200'} ${openResourcesDropdown === lesson._id ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-200 hover:shadow-md`}>
                         <div className="relative">
