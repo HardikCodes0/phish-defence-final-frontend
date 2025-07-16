@@ -596,43 +596,76 @@ const CourseDetail = () => {
     }
   };
   const handleAddLesson = async () => {
+    if (!newLesson.title.trim()) {
+      alert('Please enter a lesson title.');
+      return;
+    }
+    
+    if (!course?._id) {
+      alert('Course ID is missing. Please refresh the page and try again.');
+      return;
+    }
+    
     try {
       console.log('🚀 Adding lesson:', newLesson);
       const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.post(`${API_URL}/api/lesson/addlesson`, {
-        course: course?._id,
-        ...newLesson,
+      
+      if (!token) {
+        alert('You must be logged in to add lessons.');
+        return;
+      }
+      
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const lessonData = {
+        course: course._id,
+        title: newLesson.title.trim(),
+        content: newLesson.content.trim() || '',
+        videourl: newLesson.videourl.trim() || '',
+        pdfurl: newLesson.pdfurl.trim() || '',
         order: editLessons.length + 1,
-      }, { headers });
+        free: false
+      };
+      
+      console.log('📤 Sending lesson data:', lessonData);
+      console.log('🔑 Using token:', token.substring(0, 20) + '...');
+      
+      const res = await axios.post(`${API_URL}/api/lesson/addlesson`, lessonData, { headers });
       
       console.log('✅ Lesson added to backend:', res.data);
       
-      // Update both editLessons and lessons states immediately
-      const newLessonData = res.data;
-      setEditLessons(prev => {
-        console.log('📝 Updating editLessons:', [...prev, newLessonData]);
-        return [...prev, newLessonData];
-      });
-      setLessons(prev => {
-        console.log('📝 Updating lessons:', [...prev, newLessonData]);
-        return [...prev, newLessonData];
-      });
-      
-      // Reset form
+      // Reset form first
       setNewLesson({ title: '', content: '', videourl: '', pdfurl: '', order: editLessons.length + 2 });
       setAddingLesson(false);
-      alert('Lesson added!');
       
       // Re-fetch lessons from backend to ensure everything is in sync
       console.log('🔄 Re-fetching lessons from backend...');
       const lessonsRes = await axios.get(`${API_URL}/api/lesson/${course._id}`, { headers });
       console.log('📚 Fetched lessons from backend:', lessonsRes.data);
+      
+      // Update both states with fresh data
       setLessons(lessonsRes.data);
       setEditLessons(lessonsRes.data);
+      
+      alert('Lesson added successfully!');
     } catch (err) {
-      console.error('❌ Error adding lesson:', err.response?.data || err.message);
-      alert('Failed to add lesson.');
+      console.error('❌ Error adding lesson:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
+      
+      let errorMessage = 'Failed to add lesson.';
+      
+      if (err.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'You do not have permission to add lessons to this course.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      alert(errorMessage);
     }
   };
   // Resource Handlers
@@ -1672,9 +1705,16 @@ const CourseDetail = () => {
 
             {/* Lessons Management */}
             <div className="mt-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold">Lessons</h3>
-                <button type="button" onClick={() => setAddingLesson(true)} className="bg-emerald-600 px-3 py-1 rounded text-white">Add Lesson</button>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Lessons ({editLessons.length})</h3>
+                <button 
+                  type="button" 
+                  onClick={() => setAddingLesson(true)} 
+                  className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-white font-medium transition-colors flex items-center space-x-2"
+                >
+                  <span>+</span>
+                  <span>Add Lesson</span>
+                </button>
               </div>
               <ul className="space-y-2">
                 {editLessons.map((lesson, idx) => (
@@ -1732,22 +1772,74 @@ const CourseDetail = () => {
               </ul>
               {/* Add Lesson Modal */}
               {addingLesson && (
-                <div className="mt-4 bg-slate-900 p-4 rounded">
-                  <input
-                    type="text"
-                    placeholder="Lesson Title"
-                    value={newLesson.title}
-                    onChange={e => setNewLesson(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full bg-slate-800 border border-gray-600 rounded-lg px-4 py-2 mb-2"
-                  />
-                  <textarea
-                    placeholder="Lesson Content"
-                    value={newLesson.content}
-                    onChange={e => setNewLesson(prev => ({ ...prev, content: e.target.value }))}
-                    className="w-full bg-slate-800 border border-gray-600 rounded-lg px-4 py-2 mb-2"
-                  />
-                  <button type="button" onClick={handleAddLesson} className="bg-emerald-600 px-4 py-2 rounded text-white">Add</button>
-                  <button type="button" onClick={() => setAddingLesson(false)} className="ml-2 text-gray-400">Cancel</button>
+                <div className="mt-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                  <h4 className="text-lg font-semibold text-white mb-4">Add New Lesson</h4>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Lesson Title *</label>
+                      <input
+                        type="text"
+                        placeholder="Enter lesson title"
+                        value={newLesson.title}
+                        onChange={e => setNewLesson(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full bg-slate-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Lesson Content</label>
+                      <textarea
+                        placeholder="Enter lesson description or content"
+                        value={newLesson.content}
+                        onChange={e => setNewLesson(prev => ({ ...prev, content: e.target.value }))}
+                        rows="3"
+                        className="w-full bg-slate-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Video URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/video.mp4"
+                        value={newLesson.videourl}
+                        onChange={e => setNewLesson(prev => ({ ...prev, videourl: e.target.value }))}
+                        className="w-full bg-slate-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">PDF URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/document.pdf"
+                        value={newLesson.pdfurl}
+                        onChange={e => setNewLesson(prev => ({ ...prev, pdfurl: e.target.value }))}
+                        className="w-full bg-slate-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-3 mt-6">
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setAddingLesson(false);
+                        setNewLesson({ title: '', content: '', videourl: '', pdfurl: '', order: editLessons.length + 1 });
+                      }} 
+                      className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleAddLesson} 
+                      className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-white font-medium transition-colors"
+                    >
+                      Add Lesson
+                    </button>
+                  </div>
                 </div>
               )}
               {/* Edit Lesson Modal */}
