@@ -97,9 +97,11 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <div className="p-3 bg-teal-500/20 rounded-full border border-teal-500/30">
-              <Shield className="h-8 w-8 text-teal-500" />
-            </div>
+            <img 
+              src="/round logo.png" 
+              alt="Logo" 
+              className="h-16 w-16 object-contain"
+            />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome Back
