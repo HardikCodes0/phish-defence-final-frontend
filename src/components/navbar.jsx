@@ -1,8 +1,12 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Shield, Menu, X, LogOut, User, Settings } from "lucide-react";
+import { Menu, X, LogOut, User, Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { AuthContext } from "../context/authcontext";
+
+// Import logos
+import lightLogo from "../assets/final logo.png";
+import darkLogo from "../assets/darklogo.png";
 
 const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
   const location = useLocation();
@@ -27,13 +31,22 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           )}
+
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="bg-teal-500 p-2 rounded-lg group-hover:bg-teal-600 transition-colors duration-200">
-              <Shield className="text-white" size={24} />
+            {/* Logo switching based on dark mode */}
+            <div className="h-10 w-auto">
+              <img
+                src={lightLogo}
+                alt="Logo Light"
+                className="block dark:hidden h-full w-auto transition-transform duration-200 group-hover:scale-105"
+              />
+              <img
+                src={darkLogo}
+                alt="Logo Dark"
+                className="hidden dark:block h-full w-auto transition-transform duration-200 group-hover:scale-105"
+              />
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              phish <span className="text-teal-500">defense.</span>
-            </span>
+            {/* Removed the text 'phish defence.' */}
           </Link>
         </div>
 
@@ -57,7 +70,6 @@ const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
         {/* Right */}
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          
           {!user ? (
             <div className="flex items-center space-x-3">
               <Link
